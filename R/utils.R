@@ -36,3 +36,16 @@ expand.vec <- function(x, N){
     rep(list(x), N)
   }
 }
+
+#' excess mass in domains
+#'
+#' @param TS time step number
+#' @param mdmax from DNAPLmodel
+#'
+#' @return
+#' matrix with colnames corresponding to DNAPLmodel@domains and nlay rows
+#'
+overspill <- function(TS, mdmax){
+  dif <- M[, TS,] - mdmax
+  ifelse(dif > 0, dif, 0)
+}

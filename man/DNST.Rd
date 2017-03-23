@@ -6,7 +6,8 @@
 \usage{
 DNST(result.file, description = "", DNAPLmodel, uhist,
   uhist.J_units = "kg/day", fsphist = data.frame(year = c(1974, 1990), f =
-  c(1, 0)), fw = 1, fi = 1, x, y = NULL, mfdata, qh = NULL)
+  c(1, 0)), fw = 1, fi = 1, start.t = 9100, end.t, dt = 20, x,
+  y = NULL, z0 = "base", mfdata, qh = NULL)
 }
 \arguments{
 \item{result.file}{character string;
@@ -43,23 +44,34 @@ proportion of imported solvent that becomes waste (between 0 and 1, 1 is
 proportion of spilt solvent that infiltrates to water table (between 0
  1, 1 is suggested)}
 
+\item{start.t, end.t}{numeric \code{[1]};
+start and end time of the model, in days since 30/12/1899}
+
+\item{dt}{numeric \code{[1]};
+time step length, in days, usually in the order of tens of days}
+
 \item{x, y}{x and y co-ordinates of the spill with the same origin and units as
 \code{mfdata}}
 
+\item{z0}{numeric \code{[1]} or \code{"base"};
+elevation of the base of the DNAPL model, with the same datum as
+ \code{mfdata}; \code{"base"} instructs to use the bottom elevation of
+ the lowest layer at \code{x,y}, read from \code{mfdata}}
+
 \item{mfdata}{NetCDF object;
-MODFLOW data in NetCDF format (see \code{\link{GW.nc, package = Rflow}}),
+MODFLOW data in NetCDF format (see \code{\link[Rflow]{GW.nc}}),
  from which the transient horizontal Darcy velocity through the source
  zone is determined}
 
 \item{qh}{1-layer: function(t) or numeric \code{[1]};\cr
 multi-layer: list of function(t), one per layer or numeric \code{[NLAY]};\cr
-if \code{mfdata}, the horizontal Darcy velocity at the source zone may
- be given explicity as a function of time or a single constant value (or
- list of functions, one per layer, or numeric vector of values per layer
- if the model is multi-layer)}
+if \code{mfdata} is missing, the horizontal Darcy velocity at the source zone
+ may be given explicity as a function of time or a single constant value (or
+ list of functions, one per layer, or numeric vector of values per layer if
+ the model is multi-layer)}
 }
 \value{
-
+A \code{\link{DNAPLSourceTerm}} S4 object
 }
 \description{
 DNAPL source term model

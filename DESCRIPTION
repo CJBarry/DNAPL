@@ -19,4 +19,5 @@ Imports:
     RNetCDF,
     stats,
     grDevices,
-    methods
+    methods,
+    abind
