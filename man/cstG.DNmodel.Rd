@@ -42,6 +42,9 @@ the height of each layer; note that higher layers will contain more NAPL
 \item{NLAY}{integer \code{[1]};
 number of layers in the DNAPL model}
 }
+\value{
+
+}
 \description{
 Constant power mass-flux relationship model
 }

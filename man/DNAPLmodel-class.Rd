@@ -9,6 +9,10 @@
 This is the structure of a DNAPL model used by \code{\link{DNST}} to
  specify the behaviour and dissolution of DNAPLs layer by layer.
 }
+\details{
+Use the \code{\link{DNAPLmodel.check}} function for a thorough analysis
+ of the DNAPL model, to make sure that it is set up correctly.
+}
 \section{Slots}{
 
 \describe{

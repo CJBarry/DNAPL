@@ -5,6 +5,10 @@
 #' This is the structure of a DNAPL model used by \code{\link{DNST}} to
 #'  specify the behaviour and dissolution of DNAPLs layer by layer.
 #'
+#' @details
+#' Use the \code{\link{DNAPLmodel.check}} function for a thorough analysis
+#'  of the DNAPL model, to make sure that it is set up correctly.
+#'
 #' @slot NLAY integer;
 #' number of layers in the DNAPL model
 #' @slot hL numeric;
@@ -58,6 +62,13 @@ DNAPLmodel <- setClass("DNAPLmodel",
 
 #' Mass Redistribution function
 #'
+#' A description of a process that transfers mass from one domain to
+#'  another.  A common example is the dissolution of NAPL into groundwater.
+#'  In this case, slot \code{from} may be \code{"NAPL"}, slot \code{to} may
+#'  be \code{"plume"} and slot \code{flux} will be a function which returns
+#'  the rate of mass transfer (dissolution) from the NAPL domain into the
+#'  plume domain, as a function of the NAPL mass.
+#'
 #' @slot from character string;
 #' the domain from which mass is taken
 #' @slot to character string;
@@ -73,22 +84,183 @@ DNAPLmodel <- setClass("DNAPLmodel",
 #'  imply a flux the other way; in this way an equilibrium may be set up)
 #'
 #' @details
-#' The \code{flux} function must have all four arguments even if in fact
-#'  they are not all used.  The function may also use global variables that
-#'  will exist in the \code{\link{DNST}} solver function.  Typically,
-#'  \code{qh} will feature somewhere in some functions, as the dissolution
-#'  mass flux, for example, will depend on the water speed through the
-#'  source zone.  Some functions may also use the \code{M} array in order
-#'  to include some dependency on the source zone history.
+#' The \code{flux} function must have all four arguments even if in fact they
+#'  are not all used.  The function may also use global variables that will exist
+#'  in the \code{\link{DNST}} solver function.  Typically, \code{qh} will feature
+#'  somewhere in some functions, as the dissolution mass flux, for example, will
+#'  depend on the water speed through the source zone.  \code{qh} is given to
+#'  \code{\link{DNST}} as a layer-by-layer function of time, so it is common to
+#'  use \code{qh[[LAY]](time)} in the \code{flux} function.  Some functions may
+#'  also use the \code{M} array in order to include some dependency on the source
+#'  zone history.  When included as part of a \code{\link{DNAPLmodel}} (as
+#'  intended), the function may use any of the parameters saved in the slot
+#'  \code{params} as well. Remember to subset these parameters by layer
+#'  (\code{par[[LAY]]}) when the parameters could vary by layer.
+#'
+#' When used in \code{\link{DNST}}, the solver function, no flux is allowed
+#'  to reduce the mass of a domain below 0, so the solution is always
+#'  stable.  Therefore, this needn't be worried about in the \code{flux}
+#'  function.
 #'
 #' @return
 #' @export
 #'
 #' @examples
+#' # exponentially declining dissolution of a NAPL pool
+#' \dontrun{
+#' Ndiss <- Mredistribution(from = "pool",
+#'                          to = "plume",
+#'                          flux = function(fromM, toM, LAY, time){
+#'                            max.mass.so.far <- max(M[LAY,, "pool"])
+#'                            Xsect.area <- pool.width*pool.height
+#'                            solubility*Xsect.area*qh[[LAY]](time)*fromM/max.mass.so.far
+#'                          })
+#' }
+#'
 Mredistribution <- setClass("Mredistribution",
                             slots = c(from = "character", to = "character",
-                                      flux = "function"),
-                            contains = c("function"))
+                                      flux = "function"))
+
+#' Check that a DNAPL model is set up correctly
+#'
+#' The set up of a DNAPL distribution and dissolution model is fairly
+#'  detailed (see \code{\link{DNAPLmodel}}).  This function provides an
+#'  easy way to check that a DNAPL model is set up correctly.  If it isn't,
+#'  a vector of messages is returned that inform the user of all the things
+#'  that need to be corrected.  A DNAPL model that passes this check should
+#'  work with \code{\link{DNST}}.
+#'
+#' @note
+#' Some more obscure errors will not be picked up by this function.  In the
+#'  \code{spill.to} slot, it is possible to define a cycle of overspilling
+#'  (e.g. if domain A spills to domain B and domain B spills to domain A,
+#'  all in the same layer), which could result in an infinite loop during
+#'  model calculation.  This error would not be detected by
+#'  \code{DNAPLmodel.check}.
+#'
+#' @param d
+#' DNAPLmodel object to be checked, as given by \code{\link{DNAPLmodel}}
+#' @param stop.if.mistakes
+#' logical \code{[1]};
+#' should R stop executing if there are any mistakes (default \code{TRUE})
+#'
+#' @return
+#' A character vector explaining all mistakes in the DNAPL model
+#'  (\code{d}).  If there are any mistakes, the session will stop if
+#'  \code{stop.if.mistakes == TRUE} and the mistakes will be printed as
+#'  error messages.
+#'
+#' @importFrom methods is
+#' @export
+#'
+DNAPLmodel.check <- function(d, stop.if.mistakes = TRUE){
+  # for storing mistake messages
+  m <- character(0L)
+
+  # check class
+  if(!isS4(d) || !is(d, "DNAPLmodel")) m <- c(m, {
+    "the DNAPL model should be an S4 object with class 'DNAPLmodel': see help(DNAPLmodel)"
+  })
+
+  # check NLAY
+  if(length(d@NLAY) != 1L) m <- c(m, {
+    "The length of the NLAY slot should be 1: this slot gives the number of layers in the model."
+  })
+
+  # check no duplicated domains
+  if(any(duplicated(d@domains))) m <- c(m, {
+    "duplicated domain names detected"
+  })
+
+  # check domain 1
+  d1 <- d@domain1
+  tst <- length(d1) == 1L && d1 %in% d@domains
+  if(!tst) m <- c(m, {
+    "domain1 should be a single character string matching one of the named domains in the domains slot;\ndomain1 represents the mass domain to which input mass to layer 1 is directed and is likely to be a NAPL domain"
+  })
+
+  # check mdmax
+  mdm <- d@mdmax
+  expl <- "mdmax represents the maximum mass in each domain in each layer, with named columns representing mass domains and rows representing layers"
+  #
+  # - check columns
+  subject <- colnames(mdm)
+  tst <- ncol(mdm) == length(d@domains) &&
+    all(d@domains %in% subject) &&
+    all(subject %in% d@domains)
+  if(!tst) m <- c(m, paste({
+    paste0("There should be one named column (see help(colnames)) in the mdmax slot for each of the named domains in the domains slot.  Current colnames are: ", paste(subject, collapse = ", "), ", but should be: ", paste(d@domains, collapse = ", "), " (in any order).")
+  }, expl, sep = "\n"))
+  #
+  # - check rows
+  tst <- identical(nrow(mdm), d@NLAY)
+  if(!tst) m <- c(m, paste({
+    "The mdmax slot must have one row for each layer of the model (slot NLAY)."
+  }, expl, sep = "\n"))
+
+  # check spill.to
+  st <- d@spill.to
+  expl <- "The spill.to data frame governs what happens when the mass in each domain (in the row.names, see help(row.names)) exceeds the capacity in a given layer: which domain does the excess mass go into and does it go into the layer below?  See help(DNAPLmodel) for more details."
+  #
+  # - check rownames
+  #  -- only needs to include finite-capacity domains (not the plume, for
+  #      example)
+  nec.rns <- d@domains[vapply(d@domains, function(dm){
+    dm %in% colnames(d@mdmax) && !all(is.infinite(d@mdmax[, dm]))
+  }, logical(1L))]
+  tst <- all(nec.rns %in% row.names(st)) && !any(duplicated(row.names(st)))
+  if(!tst) m <- c(m, paste({
+    paste0("The slot spill.to must have one entry (row) for each mass domain, apart from domains which can contain infinite mass (such as the plume, normally).  The rows must be labelled with the domain it refers to using the row.names attribute (see help(row.names)).  The current row.names are: ", paste(row.names(st), collapse = ", "), ", but they should be: ", paste(nec.rns, collapse = ", "), " (in any order).")
+  }, expl, sep = "\n"))
+  #
+  # - check structure
+  tst <- `||`(identical(sapply(st, class),
+                        c(domain = "factor", layer = "integer")),
+              identical(sapply(st, class),
+                        c(domain = "factor", layer = "integer",
+                          domain2 = "factor")))
+  if(!tst) m <- c(m, paste({
+    "The columns in spill.to are not of the correct type.  They must be $domain: factor (input as character vector); $layer: integer (note, not double; use 0L, for example to denote an integer on input, rather than simply 0).  An optional $domain2 (factor from character vector) column is also permitted: see help(DNAPLmodel)."
+  }, expl, sep = "\n"))
+  #
+  # - check logic
+  #  -- not a complete check, just checks that a domain cannot spill to
+  #      itself in the same layer, although spilling to the same domain in
+  #      the layer below is quite common
+  tst <- !any(prob <- (st$domain == row.names(st) & st$layer == 0L))
+  if(!tst) m <- c(m, paste({
+    paste0("The destination domain for overspills (domain column) can only be the same domain as the spilling domain (in the row.names) if it is to a different layer (layer column is -1L or 1L for that row).  Problem rows are: ", paste(row.names(st)[prob], collapse = ", "))
+  }, expl, "\n"))
+
+  # check mdredist
+  mdr <- d@mdredist
+  expl <- "The mdredist slot is a list of mass transfer processes between domains describing, for example, dissolution of each NAPL domain, evaporation, matrix diffusion, as necessary for the particular model.  Each element of the list should be a Mredistritution S4 object (see help(Mredistribution))."
+  #
+  # - check that mdredist is a list of exclusively Mredistribution objects
+  tst <- all(sapply(mdr, class) == "Mredistribution")
+  if(!tst) m <- c(m, paste({
+    "Some or all elements of slot mdredist are not Mredistribution objects."
+  }, expl, sep = "\n"))
+  #
+  # - check Mredistribution set ups
+  if(tst){
+    # no point in checking this if the previous test failed
+    tst <- any(okay <- vapply(mdr, function(x){
+      class(x@to) == "character" && length(x@to) == 1L &&
+        class(x@from) == "character" && length(x@from) == 1L &&
+        identical(names(formals(x@flux)),
+                  c("fromM", "toM", "LAY", "time"))
+    }, logical(1L)))
+    if(!tst) m <- c(m, paste({
+      paste0("The Mredistribution objects in slot mdredist are not all set up correctly.  Items: (", paste(which(!okay), collapse = ", "), ") are incorrect.  See help(Mredistribution).")
+    }, expl, sep = "\n"))
+  }
+
+  # finish up and return/ stop
+  if(length(m) && stop.if.mistakes) stop(paste(m, collapse = "\n"))
+  cat(m, sep = "\n")
+  invisible(m)
+}
 
 #' Constant power mass-flux relationship model
 #'

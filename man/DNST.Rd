@@ -47,7 +47,7 @@ proportion of spilt solvent that infiltrates to water table (between 0
 \code{mfdata}}
 
 \item{mfdata}{NetCDF object;
-MODFLOW data in NetCDF format (see \code{\link{Gw.nc, package = Rflow}}),
+MODFLOW data in NetCDF format (see \code{\link{GW.nc, package = Rflow}}),
  from which the transient horizontal Darcy velocity through the source
  zone is determined}
 

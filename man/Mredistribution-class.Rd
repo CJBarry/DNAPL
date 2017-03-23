@@ -6,16 +6,31 @@
 \alias{Mredistribution-class}
 \title{Mass Redistribution function}
 \description{
-Mass Redistribution function
+A description of a process that transfers mass from one domain to
+ another.  A common example is the dissolution of NAPL into groundwater.
+ In this case, slot \code{from} may be \code{"NAPL"}, slot \code{to} may
+ be \code{"plume"} and slot \code{flux} will be a function which returns
+ the rate of mass transfer (dissolution) from the NAPL domain into the
+ plume domain, as a function of the NAPL mass.
 }
 \details{
-The \code{flux} function must have all four arguments even if in fact
- they are not all used.  The function may also use global variables that
- will exist in the \code{\link{DNST}} solver function.  Typically,
- \code{qh} will feature somewhere in some functions, as the dissolution
- mass flux, for example, will depend on the water speed through the
- source zone.  Some functions may also use the \code{M} array in order
- to include some dependency on the source zone history.
+The \code{flux} function must have all four arguments even if in fact they
+ are not all used.  The function may also use global variables that will exist
+ in the \code{\link{DNST}} solver function.  Typically, \code{qh} will feature
+ somewhere in some functions, as the dissolution mass flux, for example, will
+ depend on the water speed through the source zone.  \code{qh} is given to
+ \code{\link{DNST}} as a layer-by-layer function of time, so it is common to
+ use \code{qh[[LAY]](time)} in the \code{flux} function.  Some functions may
+ also use the \code{M} array in order to include some dependency on the source
+ zone history.  When included as part of a \code{\link{DNAPLmodel}} (as
+ intended), the function may use any of the parameters saved in the slot
+ \code{params} as well. Remember to subset these parameters by layer
+ (\code{par[[LAY]]}) when the parameters could vary by layer.
+
+When used in \code{\link{DNST}}, the solver function, no flux is allowed
+ to reduce the mass of a domain below 0, so the solution is always
+ stable.  Therefore, this needn't be worried about in the \code{flux}
+ function.
 }
 \section{Slots}{
 
@@ -36,4 +51,17 @@ and whose output represents the rate of mass transfer between the
  \code{from} and \code{to} domains (negative outputs are permitted and
  imply a flux the other way; in this way an equilibrium may be set up)}
 }}
+\examples{
+# exponentially declining dissolution of a NAPL pool
+\dontrun{
+Ndiss <- Mredistribution(from = "pool",
+                         to = "plume",
+                         flux = function(fromM, toM, LAY, time){
+                           max.mass.so.far <- max(M[LAY,, "pool"])
+                           Xsect.area <- pool.width*pool.height
+                           solubility*Xsect.area*qh[[LAY]](time)*fromM/max.mass.so.far
+                         })
+}
+
+}
 
