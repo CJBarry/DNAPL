@@ -46,7 +46,6 @@
 #'   layer or (rarely) -1 for the layer above
 #'  optional \code{$domain2} chr/ factor: a second choice domain
 #'
-#' @return
 #' @export
 #'
 #' @examples
@@ -79,30 +78,31 @@ DNAPLmodel <- setClass("DNAPLmodel",
 #' \code{toM}: mass of \code{to} domain\cr
 #' \code{LAY}: the layer of the DNAPL model\cr
 #' \code{time}: in days since 30/12/1899\cr
+#' \code{env}: the calling function's environment\cr
 #' and whose output represents the rate of mass transfer between the
 #'  \code{from} and \code{to} domains (negative outputs are permitted and
 #'  imply a flux the other way; in this way an equilibrium may be set up)
 #'
 #' @details
 #' The \code{flux} function must have all four arguments even if in fact they
-#'  are not all used.  The function may also use global variables that will exist
-#'  in the \code{\link{DNST}} solver function.  Typically, \code{qh} will feature
-#'  somewhere in some functions, as the dissolution mass flux, for example, will
-#'  depend on the water speed through the source zone.  \code{qh} is given to
-#'  \code{\link{DNST}} as a layer-by-layer function of time, so it is common to
-#'  use \code{qh[[LAY]](time)} in the \code{flux} function.  Some functions may
-#'  also use the \code{M} array in order to include some dependency on the source
-#'  zone history.  When included as part of a \code{\link{DNAPLmodel}} (as
-#'  intended), the function may use any of the parameters saved in the slot
-#'  \code{params} as well. Remember to subset these parameters by layer
-#'  (\code{par[[LAY]]}) when the parameters could vary by layer.
+#'  are not all used.  The function may also use variables that will exist in the
+#'  \code{\link{DNST}} solver function by using, for example, \code{get("qh",
+#'  env)}. Typically, \code{qh} will feature somewhere in some functions, as the
+#'  dissolution mass flux, for example, will depend on the water speed through
+#'  the source zone.  \code{qh} is given to \code{\link{DNST}} as a
+#'  layer-by-layer function of time, so it is common to use
+#'  \code{qh[[LAY]](time)} in the \code{flux} function.  Some functions may also
+#'  use the \code{M} array in order to include some dependency on the source zone
+#'  history.  When included as part of a \code{\link{DNAPLmodel}} (as intended),
+#'  the function may use any of the parameters saved in the slot \code{params} as
+#'  well. Remember to subset these parameters by layer (\code{par[[LAY]]}) when
+#'  the parameters could vary by layer.
 #'
 #' When used in \code{\link{DNST}}, the solver function, no flux is allowed
 #'  to reduce the mass of a domain below 0, so the solution is always
 #'  stable.  Therefore, this needn't be worried about in the \code{flux}
 #'  function.
 #'
-#' @return
 #' @export
 #'
 #' @examples
@@ -249,7 +249,7 @@ DNAPLmodel.check <- function(d, stop.if.mistakes = TRUE){
       class(x@to) == "character" && length(x@to) == 1L &&
         class(x@from) == "character" && length(x@from) == 1L &&
         identical(names(formals(x@flux)),
-                  c("fromM", "toM", "LAY", "time"))
+                  c("fromM", "toM", "LAY", "time", "env"))
     }, logical(1L)))
     if(!tst) m <- c(m, paste({
       paste0("The Mredistribution objects in slot mdredist are not all set up correctly.  Items: (", paste(which(!okay), collapse = ", "), ") are incorrect.  See help(Mredistribution).")
@@ -262,7 +262,10 @@ DNAPLmodel.check <- function(d, stop.if.mistakes = TRUE){
   invisible(m)
 }
 
-#' Constant power mass-flux relationship model
+#' @rdname cG
+#' @name cst-cnvG
+#'
+#' @title Constant and Convering power mass-flux relationship model
 #'
 #' @param wg
 #' numeric \code{[1]} or \code{[NLAY]};
@@ -274,10 +277,13 @@ DNAPLmodel.check <- function(d, stop.if.mistakes = TRUE){
 #' @param hp
 #' numeric \code{[1]} or \code{[NLAY]};
 #' pool height, or total height of pools in a layer
-#' @param Gamma
+#' @param Gamma,Gamma0
 #' numeric \code{[1]} or \code{[NLAY]};
 #' empirical source depletion parameter, positive; small values (<1) imply
-#'  a more persistent source term
+#'  a more persistent source term\cr
+#' for \code{cstG.DNmodel}, \Gamma is constant throughout the model,
+#'  but for \code{cnvG.DNmodel}, \Gamma converges linearly from
+#'  \code{Gamma0} (at peak mass) to 1 as the NAPL mass depletes.
 #' @param Srn,Srw
 #' numeric \code{[1]};
 #' residual saturations of NAPL and water
@@ -300,11 +306,15 @@ DNAPLmodel.check <- function(d, stop.if.mistakes = TRUE){
 #' number of layers in the DNAPL model
 #'
 #' @return
+#' a \link{DNAPLmodel} S4 object
+#'
+NULL
+
+#' @rdname cG
 #'
 #' @import methods
 #' @export
 #'
-#' @examples
 cstG.DNmodel <- function(wg, wpm, hp, Gamma, Srn, Srw, phi, rho, Cs, hL,
                          NLAY = length(hL)){
 
@@ -338,9 +348,9 @@ cstG.DNmodel <- function(wg, wpm, hp, Gamma, Srn, Srw, phi, rho, Cs, hL,
   # - uses qh and M which will be present in the solution function
   #    environment
   mdredist <- list(Mredistribution(from = "NAPL", to = "plume", flux = {
-    function(fromM, toM, LAY, time){
+    function(fromM, toM, LAY, time, env){
       # value of m0 depends on saturation history
-      m0 <- max(M[LAY,, "NAPL"])
+      m0 <- max(get("M", env)[LAY,, "NAPL"])
       if(m0 == 0) return(0)
 
       # horizontal area of pool, hence width of pool assuming circular
@@ -352,7 +362,82 @@ cstG.DNmodel <- function(wg, wpm, hp, Gamma, Srn, Srw, phi, rho, Cs, hL,
 
       Rc <- (1 - fromM/m0)^Gamma[LAY]
       C <- Cs*(1 - Rc)
-      qh[[LAY]](time)*C*(Aqg[LAY] + Aqp)
+      get("qh", env)[[LAY]](time)*C*(Aqg[LAY] + Aqp)
+    }
+  }))
+
+  # create DNAPL model S4 object
+  DNAPLmodel(NLAY = as.integer(NLAY),
+             hL = as.numeric(hL),
+             params = mget(c("wg", "wpm", "hp", "Srn", "Srw",
+                             "phi", "rho", "Cs", "Gamma",
+                             "mpua")),
+             domains = c("NAPL", "plume"),
+             domain1 = c("NAPL"),
+             mdmax = mdmax,
+             mdredist = mdredist,
+             spill.to = data.frame(row.names = "NAPL",
+                                   domain = "NAPL",
+                                   layer = 1L))
+}
+
+#' @rdname cG
+#'
+#' @import methods
+#' @export
+#'
+cnvG.DNmodel <- function(wg, wpm, hp, Gamma0, Srn, Srw, phi, rho, Cs, hL,
+                         NLAY = length(hL)){
+
+  # expand vectors where necessary
+  hL <- expand.vec(hL, NLAY)
+  wg <- expand.vec(wg, NLAY)
+  wpm <- expand.vec(wpm, NLAY)
+  hp <- expand.vec(hp, NLAY)
+  Gamma <- expand.vec(Gamma, NLAY)
+  phi <- expand.vec(phi, NLAY)
+
+  # mass capacity and area calculations
+  # - mass per unit horizontal area in a pool
+  #  -- assumes that the pool has saturation (1 - Srw) at the base,
+  #      exponentially declining to Srn at the top (hp); Sbar is the mean
+  #      saturation of the column
+  l <- log(Srn/(1 - Srw))/hp
+  Sbar <- (2*Srn)/(l*hp^2)*(hp*exp(l*hp) - (exp(l*hp) - 1)/l)
+  mpua <- phi*rho*Sbar*hp
+  #
+  # - flow-normal ganglia and pool areas and maximum masses
+  Aqg <- wg*hL
+  mgmax <- hL*((pi*wg^2)/4)*phi*Srn*rho
+  mpmax <- wpm^2*pi/4*mpua
+  #
+  # - maximum mass for each domain - no limit for plume
+  mdmax <- cbind(NAPL = mgmax + mpmax, plume = Inf)
+
+  # mass redistribution function
+  # - dissolution
+  # - uses qh and M which will be present in the solution function
+  #    environment
+  mdredist <- list(Mredistribution(from = "NAPL", to = "plume", flux = {
+    function(fromM, toM, LAY, time, env){
+      # value of m0 depends on saturation history
+      m0 <- max(get("M", env)[LAY,, "NAPL"])
+      if(m0 == 0) return(0)
+
+      # horizontal area of pool, hence width of pool assuming circular
+      Abas <- m0/mpua
+      wp <- sqrt(4*Abas/pi)
+
+      # flow-normal area of pool
+      Aqp <- (wp*hp)[LAY]
+
+      # determine Gamma based on proportion of mass removed
+      Rm <- 1 - fromM/m0
+      Gamma <- Gamma0[LAY] + Rm*(1 - Gamma0[LAY])
+
+      Rc <- (1 - fromM/m0)^Gamma[LAY]
+      C <- Cs*(1 - Rc)
+      get("qh", env)[[LAY]](time)*C*(Aqg[LAY] + Aqp)
     }
   })
   )
@@ -361,7 +446,7 @@ cstG.DNmodel <- function(wg, wpm, hp, Gamma, Srn, Srw, phi, rho, Cs, hL,
   DNAPLmodel(NLAY = as.integer(NLAY),
              hL = as.numeric(hL),
              params = mget(c("wg", "wpm", "hp", "Srn", "Srw",
-                             "phi", "rho", "Cs", "Gamma",
+                             "phi", "rho", "Cs", "Gamma0",
                              "mpua")),
              domains = c("NAPL", "plume"),
              domain1 = c("NAPL"),

@@ -31,6 +31,8 @@
 #' @import Rflow
 #' @importFrom grDevices xy.coords
 #' @importFrom abind adrop
+#' @importFrom stats qunif
+#' @importFrom stats punif
 #' @export
 #'
 #' @examples
@@ -129,7 +131,8 @@ qh <- function(x, y = NULL, L, mfdata){
               ifelse(lgtr, dvlrf[2L,,], dvlrf[1L,,]),
               ifelse(lgtr, dvlrf[1L,,], dvlrf[2L,,]))
 
-  # DV through back and front face
+  # DV in -y direction
+  # - DV through back and front face
   if(R == 1L){
     fbff <- adrop(var.get.nc(mfdata, "FlowFrontFace",
                              c(C, R, L, NA), c(1L, 1L, nlay, NA),

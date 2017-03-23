@@ -119,8 +119,8 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   uhist$cons <- uhist$cons*J.mult
   #
   # - make into functions of time
-  uhist <- approxfun(uhist, yleft = 0, yright = 0)
-  fsphist <- approxfun(sdhist, rule = 2L)
+  uhist <- approxfun(uhist[, c("t", "cons")], yleft = 0, yright = 0)
+  fsphist <- approxfun(fsphist[, c("t", "f")], rule = 2L)
   #
   # - apply losses from exports, safe disposal and volatilisation (not
   #    infiltrating)
@@ -156,7 +156,7 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   #  -- determine z0 if necessary
   if(z0 == "base"){
     z0 <- var.get.nc(mfdata, "elev",
-                     c(mfC, mfR, dim.inq.nc(mfdata, "NLAY+1")),
+                     c(mfC, mfR, dim.inq.nc(mfdata, "NLAY")$length + 1L),
                      c(1L, 1L, 1L))
   }
   #
@@ -209,6 +209,7 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   # Mtop, Mbot: mass escaped from top and bottom of model, by time step
   #  (converted to cumulative mass later)
   # dts: time step lengths
+  # overspill: function to evaluate excess mass in domains
   # cascade: an expression for moving mass between domains and layers
   #  according to values calculated by the mdredist processes
   # --------------------------------------------------------------------- #
@@ -233,6 +234,12 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   #
   # - input flux vector, centrally weighted in time
   Jinv <- vapply((tvals[-1L] + tvals[-nts])/2, Jin, double(1L))
+  #
+  # - excess mass in domains
+  overspill <- function(TS, mdmax){
+    dif <- M[, TS,] - mdmax
+    ifelse(dif > 0, dif, 0)
+  }
   #
   # - cascade mass where domains have become overfull
   #  -- executed twice for each time step, so preassigned as an expression
@@ -285,6 +292,9 @@ DNST <- function(result.file, description = "", DNAPLmodel,
       NULL
     })
   })
+  #
+  # - this function environment
+  fe <- environment()
 
 
   # run model ----
@@ -317,11 +327,14 @@ DNST <- function(result.file, description = "", DNAPLmodel,
     lmdr <- length(DNAPLmodel@mdredist)
     lapply(DNAPLmodel@mdredist[sample(1:lmdr, lmdr)], function(process){
       # determine transfer
-      transfer <- mapply(process@flux,
-                         fromM = M[, TS + 1L, process@from],
-                         toM = M[, TS + 1L, process@to],
-                         LAY = 1:nlay,
-                         time = mean(tvals[TS + 0:1]))*dts[TS]
+      transfer <- with(DNAPLmodel@params, {
+        mapply(process@flux,
+               fromM = M[, TS + 1L, process@from],
+               toM = M[, TS + 1L, process@to],
+               LAY = 1:nlay,
+               MoreArgs = list(time = mean(tvals[TS + 0:1]),
+                               env = fe))*dts[TS]
+      })
 
       # ensure mass of any domain doesn't decrease below 0
       transfer <- ifelse(transfer < M[, TS + 1L, process@from],
