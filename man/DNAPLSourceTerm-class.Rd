@@ -42,5 +42,11 @@ mass imbalance by time step; mass should be completely accounted for, so
 
 \item{\code{description}}{character string;
 user-supplied information specific to the model, for future reference}
+
+\item{\code{xy}}{numeric \code{[2]};
+location of the spill}
+
+\item{\code{z0}}{numeric \code{[1]};
+elevation that the bottom of the source term model refers to}
 }}
 

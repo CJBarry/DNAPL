@@ -62,6 +62,10 @@
 #'  may be given explicity as a function of time or a single constant value (or
 #'  list of functions, one per layer, or numeric vector of values per layer if
 #'  the model is multi-layer)
+#' @param check.qh
+#' logical \code{[1]};
+#' whether to check the final set of qh functions for NA results (could be
+#'  time-consuming for lots of time steps, but makes error catching easier)
 #'
 #' @return
 #' A \code{\link{DNAPLSourceTerm}} S4 object
@@ -80,7 +84,8 @@ DNST <- function(result.file, description = "", DNAPLmodel,
                  uhist, uhist.J_units = "kg/day",
                  fsphist = data.frame(year = c(1974, 1990), f = c(1, 0)),
                  fw = 1, fi = 1, start.t = 9100, end.t, dt = 20,
-                 x = NULL, y = NULL, z0 = "base", mfdata, qh = NULL){
+                 x = NULL, y = NULL, z0 = "base", mfdata, qh = NULL,
+                 check.qh = TRUE){
 
   # check the DNAPL model ----
   #
@@ -94,6 +99,60 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   # --------------------------------------------------------------------- #
   #
   DNAPLmodel.check(DNAPLmodel)
+  # --------------------------------------------------------------------- #
+
+
+  # check timings ----
+  #
+  # --------------------------------------------------------------------- #
+  # Checks whether the MF timings encompass the DNAPL model timings
+  #
+  # If the DNAPL model period (start.t - end.t) starts before of finishes
+  #  after the MF model period, then the start.t or end.t is adjusted as
+  #  appropriate and a warning is given.  If the DNAPL model period is
+  #  entirely outside the MF model period, then an error is given.
+  # --------------------------------------------------------------------- #
+  #
+  # - ensure start.t, end.t and dt are single values
+  if(length(start.t) != 1L){
+    start.t <- start.t[1L]
+    warning("DNST: start.t should be length-1 numeric")
+  }
+  if(length(end.t) != 1L){
+    end.t <- end.t[1L]
+    warning("DNST: end.t should be length-1 numeric")
+  }
+  if(length(dt) != 1L){
+    dt <- dt[1L]
+    warning("DNST: dt should be length-1 numeric")
+  }
+  #
+  # - check correct sorting
+  if(start.t >= end.t) stop("DNST: start.t must be less than end.t")
+  if(dt > end.t - start.t) warning("DNST: dt longer than model period")
+  #
+  # - check period match with MODFLOW model
+  if(!missing(mfdata)){
+    MFtrg <- range(mftstime(mfdata, TRUE))
+
+    if(start.t < MFtrg[1L]){
+      if(end.t <= MFtrg[1L]){
+        stop("DNST: DNAPL model period entirely before MODFLOW period")
+      }else{
+        start.t <- MFtrg[1L]
+        warning("DNST: start.t brought forward to start of MODFLOW model")
+      }
+    }
+
+    if(end.t > MFtrg[2L]){
+      if(start.t >= MFtrg[2L]){
+        stop("DNST: DNAPL model period entirely after MODFLOW period")
+      }else{
+        end.t <- MFtrg[2L]
+        warning("DNST: end.t brought back to end of MODFLOW model")
+      }
+    }
+  }
   # --------------------------------------------------------------------- #
 
 
@@ -188,6 +247,7 @@ DNST <- function(result.file, description = "", DNAPLmodel,
     if(is.numeric(qh)) qh <- lapply(qh, function(q){function(t) q})
 
     if(length(qh) != DNAPLmodel@NLAY) stop("number of layers for qh do not match the number of layers in the DNAPL model (DNAPLmodel@NLAY)")
+    qh
   }else{
     tmp <- qh(x, y, mfL, mfdata)
 
@@ -202,7 +262,7 @@ DNST <- function(result.file, description = "", DNAPLmodel,
       lapply(mfL, function(l){
         # uses the rownames attached to the matrix within qh
         approxfun(mftstime(mfdata, TRUE)[-1L], tmp[, paste0("L", l)],
-                  rule = 2:1)
+                  rule = 2L)
       })
     }
   }
@@ -223,6 +283,9 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   # overspill: function to evaluate excess mass in domains
   # cascade: an expression for moving mass between domains and layers
   #  according to values calculated by the mdredist processes
+  #
+  # Also checks that none of the qh functions will make NA for any tval,
+  #  if requested with check.qh
   # --------------------------------------------------------------------- #
   #
   # - determine time step end times
@@ -269,15 +332,18 @@ DNST <- function(result.file, description = "", DNAPLmodel,
 
         # give excess mass to domain to which spill is directed, or cascade
         #  down into next cell
+        use.d2 <- "domain2" %in% names(DNAPLmodel@spill.to)
         with(DNAPLmodel@spill.to[d,], {
           # convert from factor
           domain <- as.character(domain)
-          if(exists("domain2")) domain2 <- as.character(domain2)
+          if(use.d2) domain2 <- as.character(domain2)
 
           # domain2 needed if the following ever evaluates TRUE
-          domains <- ifelse(M[, TS, domain] >= DNAPLmodel@mdmax[, domain],
-                            if(exists("domain2")) domain2 else NA_real_,
-                            domain)
+          domains <- if(use.d2){
+            ifelse(M[, TS, domain] >= DNAPLmodel@mdmax[, domain],
+                   if(exists("domain2")) domain2 else NA_real_,
+                   domain)
+          }else rep(domain, nlay)
 
           if(identical(layer, 1L)){
             # case that mass is lost to layer below
@@ -306,6 +372,24 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   #
   # - this function environment
   fe <- environment()
+  #
+  # - check qh if requested
+  if(check.qh){
+    lapply(1:nlay, function(l){
+      if(!is.function(qh[[l]])) stop({
+        paste0("DNST: layer ", l, " qh is not a function")
+      })
+      if(any(is.na(vapply(tvals, qh[[l]], numeric(1L))))) stop({
+        paste0("DNST: layer ", l, " qh returning 1 or more NA values within model time range")
+      })
+    })
+  }
+  #
+  # - check spill input
+  if(any(is.na(Jinv) | Jinv < -1e-10)) stop({
+    "DNST: some invalid spill inputs (from uhist and fsphist); either negative or NA"
+  })
+  if(!any(Jinv > 1e-10)) warning("DNST: all spill input 0 (from uhist and fsphist)")
   # --------------------------------------------------------------------- #
 
 

@@ -371,7 +371,7 @@ cstG.DNmodel <- function(wg, wpm, hp, Gamma, Srn, Srw, phi, rho, Cs, hL,
              hL = as.numeric(hL),
              params = mget(c("wg", "wpm", "hp", "Srn", "Srw",
                              "phi", "rho", "Cs", "Gamma",
-                             "mpua")),
+                             "Aqg", "mpua")),
              domains = c("NAPL", "plume"),
              domain1 = c("NAPL"),
              mdmax = mdmax,
@@ -447,7 +447,7 @@ cnvG.DNmodel <- function(wg, wpm, hp, Gamma0, Srn, Srw, phi, rho, Cs, hL,
              hL = as.numeric(hL),
              params = mget(c("wg", "wpm", "hp", "Srn", "Srw",
                              "phi", "rho", "Cs", "Gamma0",
-                             "mpua")),
+                             "Aqg", "mpua")),
              domains = c("NAPL", "plume"),
              domain1 = c("NAPL"),
              mdmax = mdmax,
@@ -455,4 +455,100 @@ cnvG.DNmodel <- function(wg, wpm, hp, Gamma0, Srn, Srw, phi, rho, Cs, hL,
              spill.to = data.frame(row.names = "NAPL",
                                    domain = "NAPL",
                                    layer = 1L))
+}
+
+#' Dual-domain Pool and Ganglia model
+#'
+#' This model has separate domains for ganglia and pools.  Ganglia are
+#'  flushed efficiently (effectively \code{Gamma = Inf}) and pools are
+#'  flushed inefficiently, with a \code{poolGamma} depletion parameter that
+#'  defaults to 1.
+#'
+#' @inheritParams cstG.DNmodel
+#' @param poolGamma
+#' numeric \code{[1]} or \code{[NLAY]};
+#' the empirical depletion power to be applied to pools, analogous to
+#'  \code{Gamma} in \code{\link{cstG.DNmodel}} which applies to the bulk
+#'  NAPL
+#'
+#' @return
+#' a \link{DNAPLmodel} S4 object
+#'
+#' @import methods
+#' @export
+#'
+DDpg.DNmodel <- function(wg, wpm, hp, Srn, Srw, phi, rho, Cs, hL,
+                         NLAY = length(hL), poolGamma = 1){
+
+  # expand vectors where necessary
+  hL <- expand.vec(hL, NLAY)
+  wg <- expand.vec(wg, NLAY)
+  wpm <- expand.vec(wpm, NLAY)
+  hp <- expand.vec(hp, NLAY)
+  phi <- expand.vec(phi, NLAY)
+  poolGamma <- expand.vec(poolGamma, NLAY)
+
+  # mass capacity and area calculations
+  # - mass per unit horizontal area in a pool
+  #  -- assumes that the pool has saturation (1 - Srw) at the base,
+  #      exponentially declining to Srn at the top (hp); Sbar is the mean
+  #      saturation of the column
+  l <- log(Srn/(1 - Srw))/hp
+  Sbar <- (2*Srn)/(l*hp^2)*(hp*exp(l*hp) - (exp(l*hp) - 1)/l)
+  mpua <- phi*rho*Sbar*hp
+  #
+  # - flow-normal ganglia and pool areas and maximum masses
+  Aqg <- wg*hL
+  mgmax <- hL*((pi*wg^2)/4)*phi*Srn*rho
+  mpmax <- wpm^2*pi/4*mpua
+  #
+  # - maximum mass for each domain - no limit for plume
+  mdmax <- cbind(pool = mgmax, ganglia = mpmax, plume = Inf)
+
+  # mass redistribution functions
+  mdredist <- list(Mredistribution(from = "ganglia", to = "plume", flux = {
+    function(fromM, toM, LAY, time, env){
+      C <- ifelse(fromM == 0, 0, Cs)
+      get("qh", env)[[LAY]](time)*C*Aqg[LAY]
+    }
+  }),
+  Mredistribution(from = "pool", to = "plume", flux = {
+    function(fromM, toM, LAY, time, env){
+      # in this model, max. mass is based on saturation history, so there
+      #  can be a limitless
+      m0 <- max(get("M", env)[LAY,, "pool"], fromM)
+
+      # if no mass has ever entered this cell
+      if(m0 == 0) return(0)
+
+      # horizontal area of pool, hence width of pool assuming circular
+      Abas <- m0/mpua
+      wp <- sqrt(4*Abas/pi)
+
+      # determine pool Gamma based on proportion of mass removed
+      Rm <- 1 - fromM/m0
+
+      Rc <- (1 - fromM/m0)^poolGamma[LAY]
+      C <- Cs*(1 - Rc)
+
+      # flow-normal area of pool
+      Aqp <- (wp*hp)[LAY]
+
+      get("qh", env)[[LAY]](time)*C*Aqp
+    }
+  }))
+
+  # create DNAPL model S4 object
+  DNAPLmodel(NLAY = as.integer(NLAY),
+             hL = as.numeric(hL),
+             params = mget(c("wg", "wpm", "hp", "Srn", "Srw",
+                             "phi", "rho", "Cs", "poolGamma",
+                             "Aqg", "mpua")),
+             domains = c("ganglia", "pool", "plume"),
+             domain1 = c("ganglia"),
+             mdmax = mdmax,
+             mdredist = mdredist,
+             spill.to = data.frame(row.names = c("ganglia", "pool"),
+                                   domain = c("pool", "ganglia"),
+                                   layer = c(0L, 1L)))
 }

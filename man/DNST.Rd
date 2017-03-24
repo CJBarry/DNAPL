@@ -6,8 +6,8 @@
 \usage{
 DNST(result.file, description = "", DNAPLmodel, uhist,
   uhist.J_units = "kg/day", fsphist = data.frame(year = c(1974, 1990), f =
-  c(1, 0)), fw = 1, fi = 1, start.t = 9100, end.t, dt = 20, x,
-  y = NULL, z0 = "base", mfdata, qh = NULL)
+  c(1, 0)), fw = 1, fi = 1, start.t = 9100, end.t, dt = 20, x = NULL,
+  y = NULL, z0 = "base", mfdata, qh = NULL, check.qh = TRUE)
 }
 \arguments{
 \item{result.file}{character string;
@@ -69,6 +69,10 @@ if \code{mfdata} is missing, the horizontal Darcy velocity at the source zone
  may be given explicity as a function of time or a single constant value (or
  list of functions, one per layer, or numeric vector of values per layer if
  the model is multi-layer)}
+
+\item{check.qh}{logical \code{[1]};
+whether to check the final set of qh functions for NA results (could be
+ time-consuming for lots of time steps, but makes error catching easier)}
 }
 \value{
 A \code{\link{DNAPLSourceTerm}} S4 object
