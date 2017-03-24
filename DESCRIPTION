@@ -21,3 +21,4 @@ Imports:
     grDevices,
     methods,
     abind
+Suggests: testthat

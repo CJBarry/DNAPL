@@ -80,7 +80,7 @@ DNST <- function(result.file, description = "", DNAPLmodel,
                  uhist, uhist.J_units = "kg/day",
                  fsphist = data.frame(year = c(1974, 1990), f = c(1, 0)),
                  fw = 1, fi = 1, start.t = 9100, end.t, dt = 20,
-                 x, y = NULL, z0 = "base", mfdata, qh = NULL){
+                 x = NULL, y = NULL, z0 = "base", mfdata, qh = NULL){
 
   # check the DNAPL model ----
   #
@@ -146,29 +146,40 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   # --------------------------------------------------------------------- #
   #
   # - x,y co-ordinates and C,R reference
-  xy <- xy.coords(x, y)
-  x <- xy$x; y <- xy$y
-  mfC <- cellref.loc(x, gccs(mfdata, TRUE))
-  mfR <- cellref.loc(y, grcs(mfdata, TRUE), TRUE)
+  if(is.null(x)){
+    x <- y <- NA_real_
+    if(!missing(mfdata)) stop({
+      "DNST: no x or y values given, but mfdata is given"
+    })
+  }else{
+    xy <- xy.coords(x, y)
+    x <- xy$x; y <- xy$y
+    mfC <- cellref.loc(x, gccs(mfdata, TRUE))
+    mfR <- cellref.loc(y, grcs(mfdata, TRUE), TRUE)
+  }
   #
   # - determine which MODFLOW layer each DNAPL model layer is in (from
   #    midpoint of height)
   #  -- determine z0 if necessary
   if(z0 == "base"){
-    z0 <- var.get.nc(mfdata, "elev",
-                     c(mfC, mfR, dim.inq.nc(mfdata, "NLAY")$length + 1L),
-                     c(1L, 1L, 1L))
+    z0 <- if(!missing(mfdata)){
+      var.get.nc(mfdata, "elev",
+                 c(mfC, mfR, dim.inq.nc(mfdata, "NLAY")$length + 1L),
+                 c(1L, 1L, 1L))
+    }else NA_real_
   }
   #
-  #  -- elevations of the midpoints of each DNAPL model layer
-  DNl.mp <- z0 + cumsum(DNAPLmodel@hL) - DNAPLmodel@hL/2
-  #
-  #  -- layer references
-  mfL <- cellref.loc(DNl.mp,
-                     c(rev(var.get.nc(mfdata, "elev",
-                                      c(mfC, mfR, NA), c(1L, 1L, NA)))),
-                     TRUE)
-  #
+  if(!missing(mfdata)){
+    #  -- elevations of the midpoints of each DNAPL model layer
+    DNl.mp <- z0 + cumsum(DNAPLmodel@hL) - DNAPLmodel@hL/2
+    #
+    #  -- layer references
+    mfL <- cellref.loc(DNl.mp,
+                       c(rev(var.get.nc(mfdata, "elev",
+                                        c(mfC, mfR, NA), c(1L, 1L, NA)))),
+                       TRUE)
+    #
+  }
   # - calculate Darcy Velocity (or check it if given explicitly)
   qh <- if(missing(mfdata)){
     if(is.null(qh)) stop("no MODFLOW results given to mfdata and no value for qh given")
@@ -295,6 +306,7 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   #
   # - this function environment
   fe <- environment()
+  # --------------------------------------------------------------------- #
 
 
   # run model ----
@@ -357,6 +369,7 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   # - convert bottom and top losses to cumulative losses
   Mbot <- cumsum(Mbot)
   Mtop <- cumsum(Mtop)
+  # --------------------------------------------------------------------- #
 
 
   # post-process results ----
@@ -377,6 +390,8 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   #
   # - determine mass imbalance (should be 0 apart from machine imprecision)
   imbalance <- cumsum(c(0, Jinv*dts)) - apply(M, 2L, sum) - Mbot - Mtop
+  # --------------------------------------------------------------------- #
+
 
   # save results ----
   #
@@ -392,13 +407,16 @@ DNST <- function(result.file, description = "", DNAPLmodel,
                              time = tvals,
                              DNAPLmodel = DNAPLmodel,
                              imbalance = imbalance,
-                             description = description)
+                             description = as.character(description),
+                             xy = as.numeric(c(x, y)),
+                             z0 = as.numeric(z0))
   #
   # - save to file
   saveRDS(results, result.file)
   #
   # - return invisibly
   invisible(results)
+  # --------------------------------------------------------------------- #
 }
 
 #' DNAPL Source Term result
@@ -426,6 +444,10 @@ DNST <- function(result.file, description = "", DNAPLmodel,
 #'  error
 #' @slot description character string;
 #' user-supplied information specific to the model, for future reference
+#' @slot xy numeric \code{[2]};
+#' location of the spill
+#' @slot z0 numeric \code{[1]};
+#' elevation that the bottom of the source term model refers to
 #'
 #' @return
 #' DNAPLSourceTerm object; the results from \code{\link{DNST}}
@@ -441,4 +463,6 @@ DNAPLSourceTerm <- setClass("DNAPLSourceTerm",
                                       time = "numeric",
                                       DNAPLmodel = "DNAPLmodel",
                                       imbalance = "numeric",
-                                      description = "character"))
+                                      description = "character",
+                                      xy = "numeric",
+                                      z0 = "numeric"))
