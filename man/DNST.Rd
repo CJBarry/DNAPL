@@ -80,4 +80,8 @@ A \code{\link{DNAPLSourceTerm}} S4 object
 \description{
 DNAPL source term model
 }
+\examples{
+# to follow
+
+}
 

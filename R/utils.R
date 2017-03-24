@@ -36,3 +36,44 @@ expand.vec <- function(x, N){
     rep(list(x), N)
   }
 }
+
+#' Convert national usage trend to site usage rate through time
+#'
+#' @param nat.uhist
+#' data.frame or one of \code{"TCEusage"}, \code{"PCEusage"},
+#'  \code{"TCAusage"} or \code{"TeCMusage"};
+#' data frame must have one column called \code{cons}, which will be read
+#'  as the usage rate
+#' @param pu
+#' numeric \code{[1]};
+#' the peak usage rate at the site ever - the national usage rate is
+#'  normalised to give it a maximum value of \code{pu}; because \code{cons}
+#'  is normalised, \code{pu} needn't be in the same units - it should be in
+#'  the desired units of output and kg/day is suggested
+#'
+#' @return
+#' data.frame with adapted \code{cons} column
+#'
+#' @export
+#'
+#' @examples
+#' UK.to.site("TCEusage", 10)
+#'
+UK.to.site <- function(nat.uhist, pu){
+  e <- environment()
+  nat.uhist <- switch(class(nat.uhist),
+                      character = {
+                        data(list = nat.uhist, package = "DNAPL", envir = e)
+                        get(nat.uhist, e)
+                      },
+                      data.frame = nat.uhist,
+                      stop({
+                        "UK.to.site: invalid input for the national usage history, nat.uhist"
+                      }))
+
+  if(!"cons" %in% names(nat.uhist))
+    stop("UK.to.site: nat.uhist must have a 'cons' column, representing the nation-wide usage rate")
+
+  nat.uhist$cons <- nat.uhist$cons/max(nat.uhist$cons)*pu
+  nat.uhist
+}

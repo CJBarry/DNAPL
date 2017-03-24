@@ -1,9 +1,15 @@
 library(DNAPL)
 context("DNAPL models")
 
-cG <- cstG.DNmodel(.5, 20, 1, .5, .1, .1, .2, 1200, 1.2, 20, 3)
-cvG <- cnvG.DNmodel(.5, 20, 1, .5, .1, .1, .2, 1200, 1.2, 20, 3)
-ddG <- DDpg.DNmodel(.5, 20, 1, .1, .1, .2, 1200, 1.2, 20, 3)
+cG <- cstG.DNmodel(.5, 20, 1, .5, .1, .1, .2,
+                   CHCprops["TCE", "density"],
+                   CHCprops["TCE", "solubility"], 20, 3)
+cvG <- cnvG.DNmodel(.5, 20, 1, .5, .1, .1, .2,
+                    CHCprops["TCE", "density"],
+                    CHCprops["TCE", "solubility"], 20, 3)
+ddG <- DDpg.DNmodel(.5, 20, 1, .1, .1, .2,
+                    CHCprops["TCE", "density"],
+                    CHCprops["TCE", "solubility"], 20, 3)
 
 test_that("class is S4 DNAPLmodel", {
   expect_s4_class(cG, "DNAPLmodel")

@@ -80,6 +80,8 @@
 #' @export
 #'
 #' @examples
+#' # to follow
+#'
 DNST <- function(result.file, description = "", DNAPLmodel,
                  uhist, uhist.J_units = "kg/day",
                  fsphist = data.frame(year = c(1974, 1990), f = c(1, 0)),

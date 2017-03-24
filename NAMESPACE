@@ -3,6 +3,7 @@
 export(DDpg.DNmodel)
 export(DNAPLmodel.check)
 export(DNST)
+export(UK.to.site)
 export(cnvG.DNmodel)
 export(cstG.DNmodel)
 export(expand.vec)
