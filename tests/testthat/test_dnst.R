@@ -11,33 +11,36 @@ test_that("works with MODFLOW model, cstG", {
   fnm <- tempfile()
   expect_silent(dnst <- {
     DNST(fnm, "test", cG,
-         data.frame(year = c(1900, 1905), cons = c(0, 10)),
+         data.frame(year = c(1900, 1905), cons = c(0, 10000)),
          start.t = 0, end.t = 1500, dt = 10, x = 625, y = 825,
          mfdata = mfdata)
   })
   expect_equal(dnst, readRDS(fnm))
+  expect_lt(max(abs(dnst@imbalance)), 1e-7)
 })
 
 test_that("cnvG model", {
   fnm <- tempfile()
   expect_silent(dnst <- {
     DNST(fnm, "test", cvG,
-         data.frame(year = c(1900, 1905), cons = c(0, 10)),
+         data.frame(year = c(1900, 1905), cons = c(0, 10000)),
          start.t = 0, end.t = 1500, dt = 10, x = 625, y = 825,
          mfdata = mfdata)
   })
   expect_equal(dnst, readRDS(fnm))
+  expect_lt(max(abs(dnst@imbalance)), 1e-7)
 })
 
 test_that("DDpg model", {
   fnm <- tempfile()
   expect_silent(dnst <- {
     DNST(fnm, "test", ddG,
-         data.frame(year = c(1900, 1905), cons = c(0, 10)),
+         data.frame(year = c(1900, 1905), cons = c(0, 10000)),
          start.t = 0, end.t = 1500, dt = 10, x = 625, y = 825,
          mfdata = mfdata)
   })
   expect_equal(dnst, readRDS(fnm))
+  expect_lt(max(abs(dnst@imbalance)), 1e-7)
 })
 
 test_that("works with explicit flow", {
@@ -64,6 +67,7 @@ test_that("works with explicit flow", {
 test_that("catches timing and spillage errors", {
   mftrg <- range(Rflow::mftstime(mfdata, TRUE))
   mftmin <- mftrg[1L]; mftmax <- mftrg[2L]
+  fnm <- tempfile()
 
   # DNAPL completely too early - error
   expect_error({

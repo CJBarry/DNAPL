@@ -394,7 +394,7 @@ cnvG.DNmodel <- function(wg, wpm, hp, Gamma0, Srn, Srw, phi, rho, Cs, hL,
   wg <- expand.vec(wg, NLAY)
   wpm <- expand.vec(wpm, NLAY)
   hp <- expand.vec(hp, NLAY)
-  Gamma <- expand.vec(Gamma, NLAY)
+  Gamma0 <- expand.vec(Gamma0, NLAY)
   phi <- expand.vec(phi, NLAY)
 
   # mass capacity and area calculations
@@ -435,7 +435,7 @@ cnvG.DNmodel <- function(wg, wpm, hp, Gamma0, Srn, Srw, phi, rho, Cs, hL,
       Rm <- 1 - fromM/m0
       Gamma <- Gamma0[LAY] + Rm*(1 - Gamma0[LAY])
 
-      Rc <- (1 - fromM/m0)^Gamma[LAY]
+      Rc <- (1 - fromM/m0)^Gamma
       C <- Cs*(1 - Rc)
       get("qh", env)[[LAY]](time)*C*(Aqg[LAY] + Aqp)
     }
