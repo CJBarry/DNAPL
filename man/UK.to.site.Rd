@@ -4,7 +4,7 @@
 \alias{UK.to.site}
 \title{Convert national usage trend to site usage rate through time}
 \usage{
-UK.to.site(nat.uhist, pu, out.units = "kg/day")
+UK.to.site(nat.uhist, pu)
 }
 \arguments{
 \item{nat.uhist}{data.frame or one of \code{"TCEusage"}, \code{"PCEusage"},
@@ -14,14 +14,9 @@ data frame must have one column called \code{cons}, which will be read
 
 \item{pu}{numeric \code{[1]};
 the peak usage rate at the site ever - the national usage rate is
- normalised to give it a maximum value of \code{pu}}
-
-\item{out.units}{character string;
-the units for the output data frame; cons values are
- multiplied appropriately depending on the units; permitted values are
- \code{"kt/year"}, \code{"t/year"}, \code{"kg/year"}, \code{"t/day"} and
- \code{"kg/day"}; the default is set up to be correct for the usage
- data sets (\code{TCEusage} etc.) and the DNST solver defaults.}
+ normalised to give it a maximum value of \code{pu}; because \code{cons}
+ is normalised, \code{pu} needn't be in the same units - it should be in
+ the desired units of output and kg/day is suggested}
 }
 \value{
 data.frame with adapted \code{cons} column
