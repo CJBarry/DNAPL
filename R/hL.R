@@ -37,13 +37,33 @@
 #'
 #' hL.setup(mfdata, 625, 825, 1L)
 #' hL.setup(mfdata, 625, 825, 3L)
-#' hL.setup(mfdata, 625, 825, 3L, 10)
+#' hL.setup(mfdata, 625, 825, 3L, z0 = 10)
 #'
-hL.setup <- function(mfdata, x, y = NULL, ndlpmfl = 1L, z0 = "base"){
+#' # include a height-1 basal pool
+#' hL.setup(mfdata, 625, 825, 3L, 1)
+#'
+hL.setup <- function(mfdata, x, y = NULL,
+                     ndlpmfl = 1L, bph = 0, z0 = "base",
+                     bph.warning = TRUE){
+  # number of MODFLOW layers
   nmfl <- dim.inq.nc(mfdata, "NLAY")$length
+
+  # expand number of DNAPL layers per MODFLOW layer
   ndlpmfl <- expand.vec(ndlpmfl, nmfl)
   if(length(ndlpmfl) != nmfl) stop({
     "hL.setup: incorrect length for ndlpmfl"
+  })
+
+  # expand number of basal pools per MODFLOW layer
+  # - warn about possible accidental assignment of a basal pool to each
+  #    layer
+  if(bph.warning && length(bph) == 1L && !(nmfl == 1L || bph == 0)) warning({
+    "hL.setup: length-1 non-zero bph (basal pool height) sets up basal pools for each MODFLOW layer, not just the bottom; use c(0, 0, ..., 0, h) if you want the latter behaviour"
+  })
+  #
+  bph <- expand.vec(bph, nmfl)
+  if(length(bph) != nmfl) stop({
+    "hL.setup: incorrect length for bph"
   })
 
   xy <- xy.coords(x, y)
@@ -75,6 +95,8 @@ hL.setup <- function(mfdata, x, y = NULL, ndlpmfl = 1L, z0 = "base"){
 
   used.mfldivs <- c(avwt, mfldivs[mfldivs < avwt & mfldivs > z0 + adj], z0)
 
-  c(Map(function(h, n) rep(h/n, n),
-        diff(used.mfldivs), ndlpmfl[ltop:lbot]), recursive = TRUE)
+  c(Map(function(h, n, b){
+    c(rep((h - b)/n, n), if(b > 0) b)
+  }, -diff(used.mfldivs), ndlpmfl[ltop:lbot], bph[ltop:lbot]),
+  recursive = TRUE)
 }

@@ -4,7 +4,8 @@
 \alias{hL.setup}
 \title{Make DNAPL model layer heights appropriate to a MODFLOW data set}
 \usage{
-hL.setup(mfdata, x, y = NULL, ndlpmfl = 1L, z0 = "base")
+hL.setup(mfdata, x, y = NULL, ndlpmfl = 1L, bph = 0, z0 = "base",
+  bph.warning = TRUE)
 }
 \arguments{
 \item{mfdata}{NetCDF; a MODFLOW data set (see \code{\link[Rflow]{GW.nc}})}
@@ -36,7 +37,9 @@ mfdata <- RNetCDF::open.nc(system.file("rflow_mf_demo.nc",
 
 hL.setup(mfdata, 625, 825, 1L)
 hL.setup(mfdata, 625, 825, 3L)
-hL.setup(mfdata, 625, 825, 3L, 10)
+hL.setup(mfdata, 625, 825, 3L, z0 = 10)
+
+# include a height-1 basal pool
+hL.setup(mfdata, 625, 825, 3L, 1)
 
 }
-

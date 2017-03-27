@@ -2,8 +2,8 @@
 % Please edit documentation in R/DNST_model.R
 \docType{class}
 \name{DNAPLmodel-class}
-\alias{DNAPLmodel}
 \alias{DNAPLmodel-class}
+\alias{DNAPLmodel}
 \title{DNAPL distribution and dissolution model}
 \description{
 This is the structure of a DNAPL model used by \code{\link{DNST}} to

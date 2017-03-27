@@ -2,8 +2,8 @@
 % Please edit documentation in R/DNST_solver.R
 \docType{class}
 \name{DNAPLSourceTerm-class}
-\alias{DNAPLSourceTerm}
 \alias{DNAPLSourceTerm-class}
+\alias{DNAPLSourceTerm}
 \title{DNAPL Source Term result}
 \value{
 DNAPLSourceTerm object; the results from \code{\link{DNST}}
