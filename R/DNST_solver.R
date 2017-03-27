@@ -4,7 +4,7 @@
 #'
 #' @param result.file
 #' character string;
-#' file to save results to
+#' file to save results to (should end with extension \code{".rds"})
 #' @param description
 #' character string;
 #' information about the model and what it represents; this is saved with
