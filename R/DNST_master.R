@@ -17,6 +17,7 @@
 #'  excluding hL, NLAY, Cs and rho; \code{\link[base]{do.call}} is used
 #' @inheritParams DNST
 #' @inheritParams hL.setup
+#' @inheritParams UK.to.site
 #'
 #' @return
 #' \link{DNAPLSourceTerm} object, which is also written to
@@ -29,7 +30,7 @@
 #'
 DNST_MASTER <- function(result.file, description,
                         x, y = NULL, mfdata, contnt,
-                        DNmodel, Dm.pars,
+                        DNmodel, Dm.pars, pu,
                         start.t = td::td(1, 1, 1925), end.t, dt = 20,
                         fw = 1, fi = 1,
                         fsphist = data.frame(year = c(1974, 1990),
@@ -41,7 +42,8 @@ DNST_MASTER <- function(result.file, description,
   # read contaminant-related data
   e <- environment()
   data(list = paste0(contnt, "usage"), envir = e)
-  uhist <- get(paste0(contnt, "usage"), e)
+  nat.uhist <- get(paste0(contnt, "usage"), e)
+  uhist <- UK.to.site(nat.uhist)
   data(list = "CHCprops", envir = e)
   Cs <- CHCprops[contnt, "solubility"]
   rho <- CHCprops[contnt, "density"]
