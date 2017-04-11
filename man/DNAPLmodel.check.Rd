@@ -34,3 +34,4 @@ Some more obscure errors will not be picked up by this function.  In the
  model calculation.  This error would not be detected by
  \code{DNAPLmodel.check}.
 }
+

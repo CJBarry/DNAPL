@@ -55,3 +55,4 @@ This model has separate domains for ganglia and pools.  Ganglia are
  flushed inefficiently, with a \code{poolGamma} depletion parameter that
  defaults to 1.
 }
+

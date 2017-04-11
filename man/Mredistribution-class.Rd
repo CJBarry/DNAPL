@@ -2,8 +2,8 @@
 % Please edit documentation in R/DNST_model.R
 \docType{class}
 \name{Mredistribution-class}
-\alias{Mredistribution-class}
 \alias{Mredistribution}
+\alias{Mredistribution-class}
 \title{Mass Redistribution function}
 \description{
 A description of a process that transfers mass from one domain to
@@ -53,7 +53,6 @@ and whose output represents the rate of mass transfer between the
  \code{from} and \code{to} domains (negative outputs are permitted and
  imply a flux the other way; in this way an equilibrium may be set up)}
 }}
-
 \examples{
 # exponentially declining dissolution of a NAPL pool
 \dontrun{
@@ -67,3 +66,4 @@ Ndiss <- Mredistribution(from = "pool",
 }
 
 }
+

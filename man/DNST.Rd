@@ -11,7 +11,7 @@ DNST(result.file, description = "", DNAPLmodel, uhist,
 }
 \arguments{
 \item{result.file}{character string;
-file to save results to}
+file to save results to (should end with extension \code{".rds"})}
 
 \item{description}{character string;
 information about the model and what it represents; this is saved with
@@ -84,3 +84,4 @@ DNAPL source term model
 # to follow
 
 }
+

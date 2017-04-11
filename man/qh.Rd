@@ -40,3 +40,4 @@ mfdata <- open.nc(system.file("rflow_mf_demo.nc", package = "Rflow"))
 qh(625, 825, 1L, mfdata)
 
 }
+

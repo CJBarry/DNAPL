@@ -73,6 +73,7 @@
 #' @import Rflow
 #' @import RNetCDF
 #' @import methods
+#' @import td
 #' @importFrom stats approxfun
 #' @importFrom rlist list.save
 #' @importFrom grDevices xy.coords
@@ -170,8 +171,8 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   # --------------------------------------------------------------------- #
   #
   # - convert units of data frames
-  uhist$t <- vapply(uhist$year, Rflow:::td, numeric(1L), d = 1, m = 7)
-  fsphist$t <- vapply(fsphist$year, Rflow:::td, numeric(1L), d = 1, m = 7)
+  uhist$t <- vapply(uhist$year, td, numeric(1L), d = 1, m = 7)
+  fsphist$t <- vapply(fsphist$year, td, numeric(1L), d = 1, m = 7)
   J.mult <- switch(uhist.J_units,
                    "kg/day" = 1,
                    "kg/year" = 1/365.25,
@@ -263,7 +264,7 @@ DNST <- function(result.file, description = "", DNAPLmodel,
       #  used
       lapply(mfL, function(l){
         # uses the rownames attached to the matrix within qh
-        approxfun(mftstime(mfdata, TRUE)[-1L], tmp[, paste0("L", l)],
+        approxfun(mftstime(mfdata, TRUE)[-1L], tmp[paste0("L", l),],
                   rule = 2L)
       })
     }

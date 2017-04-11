@@ -105,14 +105,14 @@ qh <- function(x, y = NULL, L, mfdata){
   # - DV through left and right face
   if(C == 1L){
     flrf <- adrop(var.get.nc(mfdata, "FlowRightFace",
-                             c(C, R, L, NA), c(1L, 1L, nlay, NA),
+                             c(C, R, L[1L], NA), c(1L, 1L, nlay, NA),
                              collapse = FALSE), c(FALSE, TRUE, FALSE, FALSE))
     dvlrf <- array(NA_real_, c(2L, nlay, nts))
     dvlrf[1L,,] <- 0
     dvlrf[2L,,] <- flrf[1L,,]/(wx*thk)
   }else{
     flrf <- adrop(var.get.nc(mfdata, "FlowRightFace",
-                             c(C - 1L, R, L, NA), c(2L, 1L, nlay, NA),
+                             c(C - 1L, R, L[1L], NA), c(2L, 1L, nlay, NA),
                              collapse = FALSE), c(FALSE, TRUE, FALSE, FALSE))
     dvlrf <- array(NA_real_, c(2L, nlay, nts))
     dvlrf[1L,,] <- flrf[1L,,]/(wx*thk)
@@ -135,7 +135,7 @@ qh <- function(x, y = NULL, L, mfdata){
   # - DV through back and front face
   if(R == 1L){
     fbff <- adrop(var.get.nc(mfdata, "FlowFrontFace",
-                             c(C, R, L, NA), c(1L, 1L, nlay, NA),
+                             c(C, R, L[1L], NA), c(1L, 1L, nlay, NA),
                              collapse = FALSE),
                   c(TRUE, FALSE, FALSE, FALSE))
     dvbff <- array(NA_real_, c(2L, nlay, nts))
@@ -143,7 +143,7 @@ qh <- function(x, y = NULL, L, mfdata){
     dvbff[2L,,] <- fbff[1L,,]/(wy*thk)
   }else{
     fbff <- adrop(var.get.nc(mfdata, "FlowFrontFace",
-                             c(C, R - 1L, L, NA), c(1L, 2L, nlay, NA),
+                             c(C, R - 1L, L[1L], NA), c(1L, 2L, nlay, NA),
                              collapse = FALSE),
                   c(TRUE, FALSE, FALSE, FALSE))
     dvbff <- array(NA_real_, c(2L, nlay, nts))

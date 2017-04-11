@@ -30,3 +30,4 @@ expand.vec(list(1), 3L)
 \dontrun{expand.vec(1:3, 6L)}
 
 }
+
