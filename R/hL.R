@@ -85,15 +85,23 @@ hL.setup <- function(mfdata, x, y = NULL,
   tslngs <- diff(mftstime(mfdata))
   avwt <- weighted.mean(wtab, tslngs)
 
-  # find which layer contains the average water table
-  ltop <- cellref.loc(avwt, rev(mfldivs), TRUE)
+  # find which layer contains the average water table, or if the water
+  #  head is above the top of layer 1
+  ltop <- if(avwt > mfldivs[1L]) 1L else
+    cellref.loc(avwt, rev(mfldivs), TRUE)
 
   # find which layer contains the base
   # - uses a very slightly elevated value to avoid NA
   adj <- min(-diff(mfldivs), na.rm = TRUE)/100
   lbot <- cellref.loc(z0 + adj, rev(mfldivs), TRUE)
 
-  used.mfldivs <- c(avwt, mfldivs[mfldivs < avwt & mfldivs > z0 + adj], z0)
+  # which MODFLOW layer divides are used
+  # - resulting length should be lbot - ltop + 2
+  used.mfldivs <- if(avwt > mfldivs[1L]){
+    c(mfldivs[mfldivs > z0 + adj], z0)
+  }else{
+    c(avwt, mfldivs[mfldivs < avwt & mfldivs > z0 + adj], z0)
+  }
 
   c(Map(function(h, n, b){
     c(rep((h - b)/n, n), if(b > 0) b)
