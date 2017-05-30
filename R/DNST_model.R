@@ -331,9 +331,7 @@ cstG.DNmodel <- function(wg, wpm, hp, Gamma, Srn, Srw, phi, rho, Cs, hL,
   #  -- assumes that the pool has saturation (1 - Srw) at the base,
   #      exponentially declining to Srn at the top (hp); Sbar is the mean
   #      saturation of the column
-  l <- log(Srn/(1 - Srw))/hp
-  Sbar <- (2*Srn)/(l*hp^2)*(hp*exp(l*hp) - (exp(l*hp) - 1)/l)
-  mpua <- phi*rho*Sbar*hp
+  mpua <- pool_mpua(hp, phi, rho, Srn, Srw, "exponential")
   #
   # - flow-normal ganglia and pool areas and maximum masses
   Aqg <- wg*hL
@@ -402,9 +400,7 @@ cnvG.DNmodel <- function(wg, wpm, hp, Gamma0, Srn, Srw, phi, rho, Cs, hL,
   #  -- assumes that the pool has saturation (1 - Srw) at the base,
   #      exponentially declining to Srn at the top (hp); Sbar is the mean
   #      saturation of the column
-  l <- log(Srn/(1 - Srw))/hp
-  Sbar <- (2*Srn)/(l*hp^2)*(hp*exp(l*hp) - (exp(l*hp) - 1)/l)
-  mpua <- phi*rho*Sbar*hp
+  mpua <- pool_mpua(hp, phi, rho, Srn, Srw, "exponential")
   #
   # - flow-normal ganglia and pool areas and maximum masses
   Aqg <- wg*hL
@@ -493,9 +489,7 @@ DDpg.DNmodel <- function(wg, wpm, hp, Srn, Srw, phi, rho, Cs, hL,
   #  -- assumes that the pool has saturation (1 - Srw) at the base,
   #      exponentially declining to Srn at the top (hp); Sbar is the mean
   #      saturation of the column
-  l <- log(Srn/(1 - Srw))/hp
-  Sbar <- (2*Srn)/(l*hp^2)*(hp*exp(l*hp) - (exp(l*hp) - 1)/l)
-  mpua <- phi*rho*Sbar*hp
+  mpua <- pool_mpua(hp, phi, rho, Srn, Srw, "exponential")
   #
   # - flow-normal ganglia and pool areas and maximum masses
   Aqg <- wg*hL
@@ -551,4 +545,21 @@ DDpg.DNmodel <- function(wg, wpm, hp, Srn, Srw, phi, rho, Cs, hL,
              spill.to = data.frame(row.names = c("ganglia", "pool"),
                                    domain = c("pool", "ganglia"),
                                    layer = c(0L, 1L)))
+}
+
+# mass per unit area of pool
+pool_mpua <- function(hp, phi, rho, Srn, Srw,
+                      mode = c("uniform", "linear", "exponential")[1L]){
+  Sbar <- switch(mode,
+                 uniform = 1 - Srw,
+                 linear = (1 - Srw + Srn)/2,
+                 exponential = {
+                   lambda <- log((1 - Srw)/Srn)
+                   
+                   (1 - Srw)/(lambda*hp)*
+                     (1 - exp(-lambda*hp))
+                 },
+                 stop("DNAPL::mpua: invalid mode; choose \"uniform\", \" linear\" or \"exponential\""))
+  
+  Sbar*phi*hp*rho
 }
