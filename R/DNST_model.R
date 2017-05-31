@@ -84,24 +84,32 @@ DNAPLmodel <- setClass("DNAPLmodel",
 #'  imply a flux the other way; in this way an equilibrium may be set up)
 #'
 #' @details
-#' The \code{flux} function must have all four arguments even if in fact they
-#'  are not all used.  The function may also use variables that will exist in the
-#'  \code{\link{DNST}} solver function by using, for example, \code{get("qh",
-#'  env)}. Typically, \code{qh} will feature somewhere in some functions, as the
-#'  dissolution mass flux, for example, will depend on the water speed through
-#'  the source zone.  \code{qh} is given to \code{\link{DNST}} as a
-#'  layer-by-layer function of time, so it is common to use
-#'  \code{qh[[LAY]](time)} in the \code{flux} function.  Some functions may also
-#'  use the \code{M} array in order to include some dependency on the source zone
-#'  history.  When included as part of a \code{\link{DNAPLmodel}} (as intended),
-#'  the function may use any of the parameters saved in the slot \code{params} as
-#'  well. Remember to subset these parameters by layer (\code{par[[LAY]]}) when
-#'  the parameters could vary by layer.
+#' The \code{flux} function must have all four arguments even if in fact
+#'  they are not all used.  The function may also use variables that will
+#'  exist in the \code{\link{DNST}} solver function by using, for example,
+#'  \code{get("qh", env)}. Typically, \code{qh} will feature somewhere in
+#'  some functions, as the dissolution mass flux, for example, will depend
+#'  on the water speed through the source zone.  \code{qh} is given to
+#'  \code{\link{DNST}} as a layer-by-layer function of time, so it is common
+#'  to use \code{get("qh", env)[[LAY]](time)} in the \code{flux} function.
+#'  Some functions may also use the \code{M} array in order to include some
+#'  dependency on the source zone history.  When included as part of a
+#'  \code{\link{DNAPLmodel}} (as intended), the function may use any of the
+#'  parameters saved in the slot \code{params} as well. Remember to subset
+#'  these parameters by layer (\code{par[[LAY]]}) when the parameters could
+#'  vary by layer.
 #'
 #' When used in \code{\link{DNST}}, the solver function, no flux is allowed
 #'  to reduce the mass of a domain below 0, so the solution is always
 #'  stable.  Therefore, this needn't be worried about in the \code{flux}
 #'  function.
+#'
+#' \code{Mredistribution} objects are created within the provided
+#'  \code{\link{DNAPLmodel}} creation functions
+#'  (\code{\link{cstG.DNmodel}}, \code{\link{cnvG.DNmodel}} and
+#'  \code{\link{DDpg.DNmodel}} currently).  Defining your own
+#'  \code{Mredistribution} is fairly advanced and will require some
+#'  understanding of environments in \code{R}.
 #'
 #' @export
 #'
@@ -110,10 +118,25 @@ DNAPLmodel <- setClass("DNAPLmodel",
 #' \dontrun{
 #' Ndiss <- Mredistribution(from = "pool",
 #'                          to = "plume",
-#'                          flux = function(fromM, toM, LAY, time){
-#'                            max.mass.so.far <- max(M[LAY,, "pool"])
+#'                          flux = function(fromM, toM, LAY, time, env){
+#'                            # get historic maximum of mass from this layer
+#'                            # - use get("M", env) to access the mass array from
+#'                            #    the DNST master function which will call this
+#'                            #    function
+#'                            max.mass.so.far <- max(get("M", env)[LAY,, "pool"])
+#'
+#'                            # to use this redistribution model, pool.width and
+#'                            #  pool.height will need to be defined in the global
+#'                            #  environment or, better, included in the params
+#'                            #  slot of the DNAPLmodel object which contains this
+#'                            #  Mredistribution object
 #'                            Xsect.area <- pool.width*pool.height
-#'                            solubility*Xsect.area*qh[[LAY]](time)*fromM/max.mass.so.far
+#'
+#'                            # again, horizontal flow (Darcy velocity) is accessed
+#'                            #  by get("qh", env)
+#'                            # solubility must be defined in the same way as
+#'                            #  pool.width and pool.height (see comment above)
+#'                            solubility*Xsect.area*get("qh", env)[[LAY]](time)*fromM/max.mass.so.far
 #'                          })
 #' }
 #'
@@ -547,7 +570,20 @@ DDpg.DNmodel <- function(wg, wpm, hp, Srn, Srw, phi, rho, Cs, hL,
                                    layer = c(0L, 1L)))
 }
 
-# mass per unit area of pool
+#' Mass per unit area of pool
+#'
+#' @inheritParams cstG.DNmodel
+#' @param mode
+#' character [1];
+#' nature of saturation variation with height above pool base, one of
+#'  \code{"uniform"}, \code{"linear"} or \code{"exponential"}; for
+#'  \code{"uniform"}, it is taken that the pool has saturation
+#'  \code{1 - Srw} and for the other two it is taken that the pool has
+#'  saturation \code{1 - Srw} at the base and \code{Srn} at the top
+#'
+#' @return
+#' numeric[]
+#'
 pool_mpua <- function(hp, phi, rho, Srn, Srw,
                       mode = c("uniform", "linear", "exponential")[1L]){
   Sbar <- switch(mode,
@@ -555,11 +591,11 @@ pool_mpua <- function(hp, phi, rho, Srn, Srw,
                  linear = (1 - Srw + Srn)/2,
                  exponential = {
                    lambda <- log((1 - Srw)/Srn)
-                   
+
                    (1 - Srw)/(lambda*hp)*
                      (1 - exp(-lambda*hp))
                  },
-                 stop("DNAPL::mpua: invalid mode; choose \"uniform\", \" linear\" or \"exponential\""))
-  
+                 stop("DNAPL::pool_mpua: invalid mode; choose \"uniform\", \" linear\" or \"exponential\""))
+
   Sbar*phi*hp*rho
 }

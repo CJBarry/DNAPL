@@ -2,11 +2,11 @@
 % Please edit documentation in R/data.R
 \docType{data}
 \name{usage}
-\alias{usage}
-\alias{TCEusage}
 \alias{PCEusage}
 \alias{TCAusage}
+\alias{TCEusage}
 \alias{TeCMusage}
+\alias{usage}
 \title{UK Chlorinated solvent usage}
 \format{Data frames with 15 rows:
 \describe{
@@ -42,3 +42,4 @@ Check \code{attr(TCEusage, "units")} to see units displayed.
 Rivett, M.O. et al., 1990. Organic contamination of the Birmingham aquifer, U.K. Journal of Hydrology, 113(1–4), pp.307–323.
 }
 \keyword{datasets}
+
