@@ -18,10 +18,16 @@ information about the model and what it represents; this is saved with
  the results for your record}
 
 \item{x}{x and y co-ordinates of the spill with the same origin and units as
-\code{mfdata}}
+ \code{mfdata};
+used to find the grid cell from which to read MODFLOW results;
+ alternatively, if \code{mfdata} is not used, x and y can simply be
+ given as information to be stored with the model}
 
 \item{y}{x and y co-ordinates of the spill with the same origin and units as
-\code{mfdata}}
+ \code{mfdata};
+used to find the grid cell from which to read MODFLOW results;
+ alternatively, if \code{mfdata} is not used, x and y can simply be
+ given as information to be stored with the model}
 
 \item{mfdata}{NetCDF object;
 MODFLOW data in NetCDF format (see \code{\link[Rflow]{GW.nc}}),

@@ -51,7 +51,10 @@ start and end time of the model, in days since 30/12/1899}
 time step length, in days, usually in the order of tens of days}
 
 \item{x, y}{x and y co-ordinates of the spill with the same origin and units as
-\code{mfdata}}
+ \code{mfdata};
+used to find the grid cell from which to read MODFLOW results;
+ alternatively, if \code{mfdata} is not used, x and y can simply be
+ given as information to be stored with the model}
 
 \item{z0}{numeric \code{[1]} or \code{"base"};
 elevation of the base of the DNAPL model, with the same datum as
