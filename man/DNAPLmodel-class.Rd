@@ -55,9 +55,9 @@ one named row for each domain, except for domains with infinite capacity
   spill to the "pool" domain in the same layer, (in which case
   \code{layer} would be 0), or excess mass in a "NAPL" domain may spill
   to the "NAPL" domain in the underlying layer (in which case
-  \code{layer} would be 1)
+  \code{layer} would be 1)\cr
  \code{$layer} int: 1 for directing to the layer below; 0 for the same
-  layer or (rarely) -1 for the layer above
+  layer or (rarely) -1 for the layer above\cr
  optional \code{$domain2} chr/ factor: a second choice domain}
 }}
 

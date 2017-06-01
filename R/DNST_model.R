@@ -41,12 +41,12 @@
 #'   spill to the "pool" domain in the same layer, (in which case
 #'   \code{layer} would be 0), or excess mass in a "NAPL" domain may spill
 #'   to the "NAPL" domain in the underlying layer (in which case
-#'   \code{layer} would be 1)
+#'   \code{layer} would be 1)\cr
 #'  \code{$layer} int: 1 for directing to the layer below; 0 for the same
-#'   layer or (rarely) -1 for the layer above
+#'   layer or (rarely) -1 for the layer above\cr
 #'  optional \code{$domain2} chr/ factor: a second choice domain
 #'
-#' @export
+#' @export DNAPLmodel
 #'
 #' @examples
 DNAPLmodel <- setClass("DNAPLmodel",
@@ -84,7 +84,7 @@ DNAPLmodel <- setClass("DNAPLmodel",
 #'  imply a flux the other way; in this way an equilibrium may be set up)
 #'
 #' @details
-#' The \code{flux} function must have all four arguments even if in fact
+#' The \code{flux} function must have all five arguments even if in fact
 #'  they are not all used.  The function may also use variables that will
 #'  exist in the \code{\link{DNST}} solver function by using, for example,
 #'  \code{get("qh", env)}. Typically, \code{qh} will feature somewhere in
@@ -111,7 +111,7 @@ DNAPLmodel <- setClass("DNAPLmodel",
 #'  \code{Mredistribution} is fairly advanced and will require some
 #'  understanding of environments in \code{R}.
 #'
-#' @export
+#' @export Mredistribution
 #'
 #' @examples
 #' # exponentially declining dissolution of a NAPL pool
@@ -590,10 +590,10 @@ pool_mpua <- function(hp, phi, rho, Srn, Srw,
                  uniform = 1 - Srw,
                  linear = (1 - Srw + Srn)/2,
                  exponential = {
-                   lambda <- log((1 - Srw)/Srn)
+                   # see a3.p76
+                   var <- log((1 - Srw)/Srn)
 
-                   (1 - Srw)/(lambda*hp)*
-                     (1 - exp(-lambda*hp))
+                   (1 - Srw)/(var)*(1 - exp(-var))
                  },
                  stop("DNAPL::pool_mpua: invalid mode; choose \"uniform\", \" linear\" or \"exponential\""))
 

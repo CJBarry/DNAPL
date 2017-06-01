@@ -469,11 +469,11 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   # --------------------------------------------------------------------- #
   #
   # - calculate effluent flux to plume, if there is a plume domain
-  if(pl <- "plume" %in% DNAPLmodel@domains){
-    J <- t(apply(adrop(M[,, "plume", drop = FALSE],
-                       c(FALSE, FALSE, TRUE)), 1L,
-                 function(r) c(0, diff(r)/dts)))
-  }
+  J <- if("plume" %in% DNAPLmodel@domains){
+    t(apply(adrop(M[,, "plume", drop = FALSE],
+                  c(FALSE, FALSE, TRUE)), 1L,
+            function(r) c(0, diff(r)/dts)))
+  }else matrix(numeric(0L))
   #
   # - determine mass imbalance (should be 0 apart from machine imprecision)
   imbalance <- cumsum(c(0, Jinv*dts)) - apply(M, 2L, sum) - Mbot - Mtop

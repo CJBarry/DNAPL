@@ -14,7 +14,7 @@ A description of a process that transfers mass from one domain to
  plume domain, as a function of the NAPL mass.
 }
 \details{
-The \code{flux} function must have all four arguments even if in fact
+The \code{flux} function must have all five arguments even if in fact
  they are not all used.  The function may also use variables that will
  exist in the \code{\link{DNST}} solver function by using, for example,
  \code{get("qh", env)}. Typically, \code{qh} will feature somewhere in
