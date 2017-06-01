@@ -14,20 +14,21 @@ A description of a process that transfers mass from one domain to
  plume domain, as a function of the NAPL mass.
 }
 \details{
-The \code{flux} function must have all five arguments even if in fact
- they are not all used.  The function may also use variables that will
- exist in the \code{\link{DNST}} solver function by using, for example,
- \code{get("qh", env)}. Typically, \code{qh} will feature somewhere in
- some functions, as the dissolution mass flux, for example, will depend
- on the water speed through the source zone.  \code{qh} is given to
- \code{\link{DNST}} as a layer-by-layer function of time, so it is common
- to use \code{get("qh", env)[[LAY]](time)} in the \code{flux} function.
- Some functions may also use the \code{M} array in order to include some
- dependency on the source zone history.  When included as part of a
- \code{\link{DNAPLmodel}} (as intended), the function may use any of the
- parameters saved in the slot \code{params} as well. Remember to subset
- these parameters by layer (\code{par[[LAY]]}) when the parameters could
- vary by layer.
+The \code{flux} function must at least have the five arguments named
+ above, as well as any arguments for the parameters within the function,
+ even if in fact they are not all used.  The function may also use
+ variables that will exist in the \code{\link{DNST}} solver function by
+ using, for example, \code{get("qh", env)}. Typically, \code{qh} will
+ feature somewhere in some functions, as the dissolution mass flux, for
+ example, will depend on the water speed through the source zone.
+ \code{qh} is given to \code{\link{DNST}} as a layer-by-layer function of
+ time, so it is common to use \code{get("qh", env)[[LAY]](time)} in the
+ \code{flux} function. Some functions may also use the \code{M} array in
+ order to include some dependency on the source zone history.  When
+ included as part of a \code{\link{DNAPLmodel}} (as intended), the
+ function may use any of the parameters saved in the slot \code{params}
+ as well. Remember to subset these parameters by layer
+ (\code{par[[LAY]]}) when the parameters could vary by layer.
 
 When used in \code{\link{DNST}}, the solver function, no flux is allowed
  to reduce the mass of a domain below 0, so the solution is always
@@ -57,6 +58,8 @@ a function whose arguments are:\cr
 \code{LAY}: the layer of the DNAPL model\cr
 \code{time}: in days since 30/12/1899\cr
 \code{env}: the calling function's environment\cr
+other parameters used within the function that are not got from the DNST
+ environment (see example)\cr
 and whose output represents the rate of mass transfer between the
  \code{from} and \code{to} domains (negative outputs are permitted and
  imply a flux the other way; in this way an equilibrium may be set up)}
@@ -66,7 +69,8 @@ and whose output represents the rate of mass transfer between the
 \dontrun{
 Ndiss <- Mredistribution(from = "pool",
                          to = "plume",
-                         flux = function(fromM, toM, LAY, time, env){
+                         flux = function(fromM, toM, LAY, time, env,
+                                         pool.width, pool.height, solubility){
                            # get historic maximum of mass from this layer
                            # - use get("M", env) to access the mass array from
                            #    the DNST master function which will call this

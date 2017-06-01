@@ -181,8 +181,9 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   uhist$cons <- uhist$cons*J.mult
   #
   # - make into functions of time
-  uhist <- approxfun(uhist[, c("t", "cons")], yleft = 0, yright = 0)
-  fsphist <- approxfun(fsphist[, c("t", "f")], rule = 2L)
+  uhist <- approxfun(uhist[, c("t", "cons")], yleft = 0, yright = 0,
+                     ties = "ordered")
+  fsphist <- approxfun(fsphist[, c("t", "f")], rule = 2L, ties = "ordered")
   #
   # - apply losses from exports, safe disposal and volatilisation (not
   #    infiltrating)
@@ -425,15 +426,20 @@ DNST <- function(result.file, description = "", DNAPLmodel,
     #    there is no biassing in the long run
     lmdr <- length(DNAPLmodel@mdredist)
     lapply(DNAPLmodel@mdredist[sample(1:lmdr, lmdr)], function(process){
+      # find which parameters are needed
+      args <- names(formals(process@flux))
+      needpars <- args[!args %in% c("fromM", "toM", "LAY", "time", "env")]
+
       # determine transfer
-      transfer <- with(DNAPLmodel@params, {
-        mapply(process@flux,
-               fromM = M[, TS + 1L, process@from],
-               toM = M[, TS + 1L, process@to],
-               LAY = 1:nlay,
-               MoreArgs = list(time = mean(tvals[TS + 0:1]),
-                               env = fe))*dts[TS]
-      })
+      transfer <- double(nlay)
+      for(LAY in 1:nlay) transfer[LAY] <- {
+        do.call(process@flux, c(list(fromM = M[LAY, TS + 1L, process@from],
+                                     toM = M[LAY, TS + 1L, process@to],
+                                     LAY = LAY,
+                                     time = mean(tvals[TS + 0:1]),
+                                     env = fe),
+                                DNAPLmodel@params[needpars]))*dts[TS]
+      }
 
       # ensure mass of any domain doesn't decrease below 0
       transfer <- ifelse(transfer < M[, TS + 1L, process@from],
