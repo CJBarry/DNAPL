@@ -106,6 +106,12 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   #  in the error message
   # --------------------------------------------------------------------- #
   #
+  # - ensure that spill.to$layer is integer
+  mode(DNAPLmodel@spill.to$layer) <- "integer"
+  #
+  # - ensure that the columns of mdmax are in the correct order
+  DNAPLmodel@mdmax <- DNAPLmodel@mdmax[, DNAPLmodel@domains, drop = FALSE]
+  #
   DNAPLmodel.check(DNAPLmodel)
   # --------------------------------------------------------------------- #
 

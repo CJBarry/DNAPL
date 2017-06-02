@@ -43,6 +43,8 @@ test_that("DDpg model", {
   })
   expect_equal(dnst, readRDS(fnm))
   expect_lt(max(abs(dnst@imbalance)), 1e-7)
+  expect_lte(max(dnst@M[3L,, "ganglia"]), dnst@DNAPLmodel@mdmax[3L, "ganglia"])
+  expect_lte(max(dnst@M[3L,, "pool"]), dnst@DNAPLmodel@mdmax[3L, "pool"])
   file.remove(fnm)
 })
 

@@ -525,7 +525,7 @@ DDpg.DNmodel <- function(wg, wpm, hp, Srn, Srw, phi, rho, Cs, hL,
   mpmax <- wpm^2*pi/4*mpua
   #
   # - maximum mass for each domain - no limit for plume
-  mdmax <- cbind(pool = mgmax, ganglia = mpmax, plume = Inf)
+  mdmax <- cbind(pool = mpmax, ganglia = mgmax, plume = Inf)
 
   # mass redistribution functions
   mdredist <- list(Mredistribution(from = "ganglia", to = "plume", flux = {
