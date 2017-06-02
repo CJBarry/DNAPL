@@ -13,14 +13,26 @@
 #' number of DNAPL model layers per MODFLOW layer (including any which are
 #'  always dry at the location, although the values for these layers won't
 #'  make any difference)
+#' @param bph
+#' numeric [1] or [mfNLAY];
+#' height of basal pools in each layer, or layer-by-layer: note that
+#'  length-1 input for \code{bph} will put a basal pool in every MODFLOW
+#'  layer, not just the bottom; put \code{c(0, 0, ..., 0, h)} if you want
+#'  just the bottom layer to have a basal pool
 #' @param z0
 #' numeric \code{[1]} or \code{"base"};
 #' elevation of the bottom of the DNAPL source zone, with the same datum as
 #'  \code{mfdata}; \code{"base"} instructs to read the bottom of the
 #'  MODFLOW model at this location
+#' @param bph.warning
+#' logical [1];
+#' \code{hL.setup} will give a warning with length-1 input for \code{bph},
+#'  because the result may be unexpected.  If you really do want a basal
+#'  pool in each layer, you can set \code{bph.warning = FALSE} to suppress
+#'  the warning.  Do this if you know what you are doing.
 #'
 #' @return
-#' numeric;
+#' numeric [];
 #' heights of layers of the DNAPL model, from top to bottom
 #'
 #' @import Rflow

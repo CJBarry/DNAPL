@@ -67,11 +67,13 @@ MODFLOW data in NetCDF format (see \code{\link[Rflow]{GW.nc}}),
  zone is determined}
 
 \item{qh}{1-layer: function(t) or numeric \code{[1]};\cr
-multi-layer: list of function(t), one per layer or numeric \code{[NLAY]};\cr
-if \code{mfdata} is missing, the horizontal Darcy velocity at the source zone
- may be given explicity as a function of time or a single constant value (or
- list of functions, one per layer, or numeric vector of values per layer if
- the model is multi-layer)}
+multi-layer: list \code{[NLAY]} of function(t), one per layer or numeric
+ \code{[NLAY]}, where \code{NLAY} is the number of layers in the
+ \code{DNAPLmodel} (\code{DNAPLmodel@NLAY});\cr
+if \code{mfdata} is missing, the horizontal Darcy velocity at the source
+ zone may be given explicity as a function of time or a single constant
+ value (or list of functions, one per layer, or numeric vector of values
+ per layer if the model is multi-layer)}
 
 \item{check.qh}{logical \code{[1]};
 whether to check the final set of qh functions for NA results (could be

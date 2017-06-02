@@ -79,6 +79,12 @@ number of DNAPL model layers per MODFLOW layer (including any which are
  always dry at the location, although the values for these layers won't
  make any difference)}
 
+\item{bph}{numeric [1] or [mfNLAY];
+height of basal pools in each layer, or layer-by-layer: note that
+ length-1 input for \code{bph} will put a basal pool in every MODFLOW
+ layer, not just the bottom; put \code{c(0, 0, ..., 0, h)} if you want
+ just the bottom layer to have a basal pool}
+
 \item{z0}{numeric \code{[1]} or \code{"base"};
 elevation of the base of the DNAPL model, with the same datum as
  \code{mfdata}; \code{"base"} instructs to use the bottom elevation of
