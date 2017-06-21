@@ -43,7 +43,7 @@ DNST_MASTER <- function(result.file, description,
   e <- environment()
   data(list = paste0(contnt, "usage"), envir = e)
   nat.uhist <- get(paste0(contnt, "usage"), e)
-  uhist <- UK.to.site(nat.uhist)
+  uhist <- UK.to.site(nat.uhist, pu)
   data(list = "CHCprops", envir = e)
   Cs <- CHCprops[contnt, "solubility"]
   rho <- CHCprops[contnt, "density"]
