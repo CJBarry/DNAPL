@@ -494,6 +494,11 @@ cnvG.DNmodel <- function(wg, wpm, hp, Gamma0, Srn, Srw, phi, rho, Cs, hL,
 #' the empirical depletion power to be applied to pools, analogous to
 #'  \code{Gamma} in \code{\link{cstG.DNmodel}} which applies to the bulk
 #'  NAPL
+#' @param cnvG
+#' logical[1];
+#' if \code{TRUE}, the value for \code{poolGamma} converges to 1 with
+#'  progressive source zone depletion in the same manner as in
+#'  \code{cnvG.DNmodel}
 #'
 #' @return
 #' a \link{DNAPLmodel} S4 object
@@ -502,7 +507,7 @@ cnvG.DNmodel <- function(wg, wpm, hp, Gamma0, Srn, Srw, phi, rho, Cs, hL,
 #' @export
 #'
 DDpg.DNmodel <- function(wg, wpm, hp, Srn, Srw, phi, rho, Cs, hL,
-                         NLAY = length(hL), poolGamma = 1){
+                         NLAY = length(hL), poolGamma = 1, cnvG = FALSE){
 
   # expand vectors where necessary
   hL <- expand.vec(hL, NLAY)
@@ -547,10 +552,15 @@ DDpg.DNmodel <- function(wg, wpm, hp, Srn, Srw, phi, rho, Cs, hL,
       Abas <- m0/mpua
       wp <- sqrt(4*Abas/pi)
 
-      # determine pool Gamma based on proportion of mass removed
+      # proportion of mass removed
       Rm <- 1 - fromM/m0
 
-      Rc <- (1 - fromM/m0)^poolGamma[LAY]
+      # determine Gamma based on proportion of mass removed
+      Gamma <- if(cnvG){
+        poolGamma[LAY] + Rm*(1 - poolGamma[LAY])
+      }else poolGamma[LAY]
+
+      Rc <- (1 - fromM/m0)^Gamma
       C <- Cs*(1 - Rc)
 
       # flow-normal area of pool

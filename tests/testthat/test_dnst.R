@@ -3,7 +3,10 @@ context("DNST solver")
 
 cG <- cstG.DNmodel(.5, 20, 1, .5, .1, .1, .2, 1200, 1.2, 20, 3)
 cvG <- cnvG.DNmodel(.5, 20, 1, .5, .1, .1, .2, 1200, 1.2, 20, 3)
-ddG <- DDpg.DNmodel(.5, 20, 1, .1, .1, .2, 1200, 1.2, 20, 3)
+ddG1 <- DDpg.DNmodel(.5, 20, 1, .1, .1, .2, 1200, 1.2, 20, 3,
+                     poolGamma = 2)
+ddG2 <- DDpg.DNmodel(.5, 20, 1, .1, .1, .2, 1200, 1.2, 20, 3,
+                     poolGamma = 2, cnvG = TRUE)
 mfdata <- RNetCDF::open.nc(system.file("rflow_mf_demo.nc",
                                        package = "Rflow"))
 
@@ -36,7 +39,18 @@ test_that("cnvG model", {
 test_that("DDpg model", {
   fnm <- tempfile()
   expect_silent(dnst <- {
-    DNST(fnm, "test", ddG,
+    DNST(fnm, "test", ddG1,
+         data.frame(year = c(1900, 1905), cons = c(0, 10000)),
+         start.t = 0, end.t = 1500, dt = 10, x = 625, y = 825,
+         mfdata = mfdata)
+  })
+  expect_equal(dnst, readRDS(fnm))
+  expect_lt(max(abs(dnst@imbalance)), 1e-7)
+  expect_lte(max(dnst@M[3L,, "ganglia"]), dnst@DNAPLmodel@mdmax[3L, "ganglia"])
+  expect_lte(max(dnst@M[3L,, "pool"]), dnst@DNAPLmodel@mdmax[3L, "pool"])
+
+  expect_silent(dnst <- {
+    DNST(fnm, "test", ddG2,
          data.frame(year = c(1900, 1905), cons = c(0, 10000)),
          start.t = 0, end.t = 1500, dt = 10, x = 625, y = 825,
          mfdata = mfdata)

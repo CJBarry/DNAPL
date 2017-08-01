@@ -236,11 +236,11 @@ DNST <- function(result.file, description = "", DNAPLmodel,
   #    midpoint of height)
   #  -- determine z0 if necessary
   if(z0 == "base"){
-    z0 <- if(!missing(mfdata)){
+    z0 <- if(!missing(mfdata)) as.vector({
       var.get.nc(mfdata, "elev",
                  c(mfC, mfR, dim.inq.nc(mfdata, "NLAY")$length + 1L),
                  c(1L, 1L, 1L))
-    }else NA_real_
+    }) else NA_real_
   }
   #
   if(!missing(mfdata)){
